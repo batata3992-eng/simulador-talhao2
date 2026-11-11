@@ -1089,7 +1089,7 @@ def download_farm_report_pdf(
 # `sentinel-21KXQ-*` quando o dataset está presente na máquina — nunca
 # `.env`/diretórios internos do backend).
 # ---------------------------------------------------------------------------
-_FRONTEND_STATIC_FILES = {"index.html", "fazendas.html", "auth.html", "dashboard.html", "app.js"}
+_FRONTEND_STATIC_FILES = {"index.html", "fazendas.html", "auth.html", "dashboard.html", "analise.html", "app.js"}
 _FRONTEND_DEFAULT_PAGE = "index.html"
 _FRONTEND_ROOT_REAL = os.path.realpath(BASE_PROJECT_DIR)
 

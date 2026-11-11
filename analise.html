@@ -1,0 +1,2189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orion • Análise Agronômica</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* Paleta Orion: grafite + âmbar/laranja como identidade; cores semânticas reservadas para estado e índices. */
+:root{
+    --bg:#070c09;
+    --panel:#0d1511;
+    --panel2:#101a15;
+    --border:#202B26;
+    --border2:#2B3932;
+    --green:#4FAF78;
+    --green2:#3E9966;
+    --green-soft:rgba(79,175,120,.11);
+    --orange:#D9822B;
+    --yellow:#D5AE35;
+    --red:#D85B5B;
+    --blue:#3E91C9;
+    --purple:#8975C9;
+    --text:#edf4ef;
+    --muted:#8a9990;
+    --dim:#617168;
+}
+
+body{
+    min-height:100vh;
+    color:var(--text);
+    font-family:Inter,Segoe UI,Arial,sans-serif;
+    background:
+        radial-gradient(circle at 12% -10%,rgba(79,175,120,.08),transparent 27%),
+        radial-gradient(circle at 95% 0%,rgba(245,157,36,.055),transparent 22%),
+        var(--bg);
+}
+
+button,select{font:inherit}
+
+.container{
+    width:min(1440px,calc(100% - 48px));
+    margin:auto;
+    padding:24px 0 36px;
+}
+
+/* HEADER */
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:20px;
+    padding-bottom:17px;
+    border-bottom:1px solid var(--border);
+}
+
+.brand{
+    display:flex;
+    gap:13px;
+    align-items:center;
+}
+
+.brand-mark{
+    width:46px;height:46px;
+    display:grid;place-items:center;
+    border-radius:12px;
+    color:var(--green);
+    background:linear-gradient(145deg,#12301f,#0b1711);
+    border:1px solid #214b34;
+    box-shadow:0 0 25px rgba(79,175,120,.07);
+    font-size:22px;
+}
+
+.brand h1{
+    font-size:25px;
+    line-height:1;
+    letter-spacing:-.6px;
+    font-weight:650;
+}
+
+.brand h1 span{color:var(--orange)}
+.brand p{margin-top:7px;color:var(--muted);font-size:12px}
+
+.farm-pill{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:10px 14px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    background:#0b120f;
+    color:var(--muted);
+    font-size:11px;
+}
+
+.farm-pill strong{color:#e9f2ec}
+.dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 10px rgba(79,175,120,.75);
+}
+
+/* DEMO */
+.demo{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-height:49px;
+    padding:10px 14px;
+    margin-bottom:18px;
+    border:1px solid rgba(231,191,53,.22);
+    border-left:3px solid var(--yellow);
+    border-radius:8px;
+    background:rgba(231,191,53,.035);
+    color:#c6b56e;
+    font-size:11px;
+}
+
+.demo strong{color:#e4d078}
+
+/* COMMON */
+.grid-top{
+    display:grid;
+    grid-template-columns:1.72fr 1fr;
+    gap:14px;
+}
+
+.panel{
+    background:linear-gradient(145deg,#0f1813,#0b120f);
+    border:1px solid var(--border);
+    border-radius:12px;
+    box-shadow:0 12px 35px rgba(0,0,0,.18);
+}
+
+.panel-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    padding:18px 18px 13px;
+}
+
+.panel-title h2{
+    font-size:14px;
+    font-weight:620;
+    letter-spacing:-.15px;
+}
+
+.panel-title p{
+    color:var(--dim);
+    font-size:10px;
+    margin-top:6px;
+}
+
+.status{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    color:#a7b4ab;
+    font-size:10px;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    background:#0b120f;
+}
+
+.status .dot{width:7px;height:7px}
+
+/* MAP */
+.map-panel{overflow:hidden}
+
+.map-wrap{
+    margin:0 18px 18px;
+    height:475px;
+    border:1px solid #1a2a21;
+    border-radius:9px;
+    overflow:hidden;
+    position:relative;
+    background:
+        linear-gradient(rgba(79,175,120,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(79,175,120,.035) 1px,transparent 1px),
+        radial-gradient(circle at 18% 50%,rgba(79,175,120,.18),transparent 34%),
+        #07100b;
+    background-size:36px 36px,36px 36px,auto,auto;
+}
+
+.map-wrap:after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:linear-gradient(90deg,rgba(79,175,120,.10),transparent 28%);
+}
+
+.map-svg{
+    width:100%;
+    height:100%;
+    position:relative;
+    z-index:1;
+}
+
+.plot{
+    cursor:pointer;
+    stroke:#07100b;
+    stroke-width:2.5;
+    transition:.16s;
+}
+
+.plot:hover{
+    filter:brightness(1.12);
+    stroke:#dfffe9;
+    stroke-width:3;
+}
+
+.plot.selected{
+    stroke:#f3fff7;
+    stroke-width:5;
+    filter:drop-shadow(0 0 8px rgba(79,175,120,.35));
+}
+
+.plot.critical{fill:#a83216}
+.plot.attention{fill:#b88a05}
+.plot.normal{fill:#24b85d}
+.plot.good{fill:#4cdd8b}
+
+.plot-label{
+    fill:#07100b;
+    font-size:14px;
+    font-weight:700;
+    text-anchor:middle;
+    pointer-events:none;
+}
+
+.plot-area{
+    fill:#0b2114;
+    font-size:10px;
+    text-anchor:middle;
+    pointer-events:none;
+}
+
+.map-legend{
+    position:absolute;
+    left:15px;bottom:14px;
+    z-index:3;
+    display:flex;
+    gap:15px;
+    padding:8px 10px;
+    border:1px solid rgba(36,56,46,.8);
+    border-radius:7px;
+    background:rgba(7,12,9,.82);
+    font-size:9px;
+    color:#a4b0a9;
+    backdrop-filter:blur(5px);
+}
+
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+.legend-normal{background:#24b85d}
+.legend-attention{background:#d3a80c}
+.legend-critical{background:#c03b1a}
+
+/* DETAIL */
+.detail{
+    padding-bottom:18px;
+}
+
+.detail-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    padding:18px 18px 0;
+}
+
+.detail-top h2{font-size:15px}
+.detail-top p{color:var(--muted);font-size:10px;margin-top:7px}
+
+.link-btn{
+    border:0;background:transparent;
+    color:#87968d;
+    text-decoration:underline;
+    text-underline-offset:3px;
+    font-size:10px;
+    cursor:pointer;
+}
+
+.big-number{
+    padding:16px 18px 10px;
+}
+
+.big-number strong{
+    font-size:54px;
+    line-height:1;
+    letter-spacing:-2px;
+    font-weight:600;
+}
+
+.big-number span{
+    margin-left:8px;
+    color:var(--green);
+    font-size:12px;
+    font-weight:600;
+}
+
+.big-number p{
+    margin-top:10px;
+    color:var(--muted);
+    font-size:10px;
+}
+
+.mini-chart{
+    height:86px;
+    margin:4px 18px 12px;
+}
+
+.indices{
+    padding:0 18px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+.index-line{
+    display:grid;
+    grid-template-columns:54px 1fr 38px;
+    align-items:center;
+    gap:10px;
+}
+
+.index-line label{
+    color:#b3c0b8;
+    font-size:10px;
+}
+
+.index-line small{
+    display:block;
+    color:var(--dim);
+    margin-top:3px;
+    font-size:8px;
+}
+
+.track{
+    height:6px;
+    border-radius:999px;
+    background:#17231c;
+    overflow:hidden;
+}
+
+.fill{height:100%;border-radius:999px}
+.fill.ndvi{background:#50df91}
+.fill.ndmi{background:#55aaf0}
+.fill.ndre{background:#20b968}
+.fill.evi{background:#987bea}
+
+.index-line strong{
+    text-align:right;
+    font-size:10px;
+}
+
+.detail-bottom{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    padding:16px 18px 0;
+}
+
+.small-card{
+    padding:13px;
+    border-radius:9px;
+    background:#0a110d;
+    border:1px solid var(--border);
+}
+
+.small-card.warn{border-left:2px solid var(--yellow)}
+.small-card.danger{border-left:2px solid var(--red)}
+.small-card span{color:var(--dim);font-size:9px}
+.small-card strong{display:block;margin-top:8px;font-size:18px}
+.small-card.warn strong{color:#f0ce42}
+.small-card.danger strong{color:#ff7180}
+
+/* LOWER */
+.lower{
+    display:grid;
+    grid-template-columns:1.72fr 1fr;
+    gap:14px;
+    margin-top:14px;
+}
+
+.chart-panel{padding-bottom:10px}
+.chart-box{height:330px;padding:0 18px 18px}
+
+.alerts{padding-bottom:10px}
+.alert-list{padding:0 18px 18px;display:flex;flex-direction:column;gap:9px}
+
+.alert{
+    padding:12px;
+    border-radius:9px;
+    border:1px solid var(--border);
+    background:#0b130f;
+}
+
+.alert.critical{border-color:rgba(255,91,109,.25)}
+.alert.warning{border-color:rgba(231,191,53,.25)}
+
+.alert-title{
+    display:flex;gap:9px;align-items:center;
+    font-size:11px;font-weight:650;
+}
+
+.alert-title i{
+    width:8px;height:8px;border-radius:50%;
+    display:block;background:var(--green);
+}
+
+.alert.critical .alert-title i{background:var(--red)}
+.alert.warning .alert-title i{background:#f0c515}
+
+.alert p{
+    color:var(--muted);
+    font-size:10px;
+    line-height:1.5;
+    margin:7px 0 0 17px;
+}
+
+/* TABLE */
+.table-panel{
+    margin-top:14px;
+    padding:18px;
+    overflow:hidden;
+}
+
+.table-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:13px;
+}
+
+.table-head h2{font-size:15px}
+.table-head p{color:var(--dim);font-size:10px;margin-top:5px}
+
+.table-wrap{overflow:auto}
+
+table{width:100%;border-collapse:collapse;min-width:760px}
+
+th{
+    padding:10px 9px;
+    text-align:left;
+    border-bottom:1px solid var(--border);
+    color:#687970;
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:.55px;
+}
+
+td{
+    padding:13px 9px;
+    border-bottom:1px solid rgba(28,43,35,.75);
+    color:#c7d0ca;
+    font-size:10px;
+}
+
+tbody tr:hover{background:rgba(79,175,120,.025)}
+
+.t-name{font-weight:650;color:#edf4ef;font-size:11px}
+.t-sub{display:block;color:var(--dim);font-size:9px;margin-top:4px}
+
+.ndvi-cell{
+    display:flex;
+    align-items:center;
+    gap:9px;
+}
+
+.ndvi-bar{
+    width:55px;height:5px;
+    border-radius:999px;
+    background:#17231c;
+    overflow:hidden;
+}
+
+.ndvi-bar span{display:block;height:100%;background:var(--green)}
+
+.variation-down{color:#ff6678;font-weight:600}
+.variation-up{color:var(--orange)}
+
+.spark{
+    width:135px;height:28px;
+}
+
+.analyze{
+    border:1px solid #1e5a3c;
+    background:rgba(79,175,120,.045);
+    color:#69B98B;
+    border-radius:7px;
+    padding:7px 12px;
+    cursor:pointer;
+    font-size:10px;
+}
+
+.analyze:hover{background:var(--orange);color:#120d07}
+
+/* MODAL */
+.modal{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    z-index:50;
+    background:rgba(2,6,4,.78);
+    backdrop-filter:blur(10px);
+}
+
+.modal.open{display:flex}
+
+.modal-card{
+    width:min(680px,100%);
+    max-height:88vh;
+    overflow:auto;
+    background:linear-gradient(145deg,#101a14,#0a110d);
+    border:1px solid #284033;
+    border-radius:15px;
+    padding:0;
+    box-shadow:0 30px 100px rgba(0,0,0,.65);
+}
+
+.modal-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    padding:21px 22px 18px;
+    border-bottom:1px solid var(--border);
+}
+
+.modal-kicker{
+    color:#6f8177;
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+}
+
+.modal-title-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:7px;
+}
+
+.modal-head h2{
+    font-size:21px;
+    letter-spacing:-.4px;
+}
+
+.modal-status{
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:8px;
+    font-weight:700;
+    letter-spacing:.5px;
+}
+
+.modal-status.critical{
+    color:#ff7786;
+    background:rgba(255,91,109,.10);
+    border:1px solid rgba(255,91,109,.25);
+}
+
+.modal-status.attention{
+    color:#ebca4b;
+    background:rgba(231,191,53,.09);
+    border:1px solid rgba(231,191,53,.25);
+}
+
+.modal-status.normal{
+    color:#52e698;
+    background:rgba(79,175,120,.08);
+    border:1px solid rgba(79,175,120,.22);
+}
+
+.close{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    border:1px solid var(--border2);
+    background:#0d1711;
+    color:#94a39a;
+    cursor:pointer;
+    font-size:17px;
+    transition:.18s;
+}
+
+.close:hover{
+    color:#fff;
+    border-color:#3a5144;
+    background:#142019;
+}
+
+.modal-metrics{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    padding:17px 22px;
+}
+
+.modal-metric{
+    background:#0a120e;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px;
+}
+
+.modal-metric label{
+    display:block;
+    font-size:8px;
+    color:#687a70;
+    text-transform:uppercase;
+    letter-spacing:.7px;
+}
+
+.modal-metric strong{
+    display:block;
+    font-size:24px;
+    margin-top:9px;
+    font-weight:600;
+    color:#eef5f0;
+}
+
+.modal-metric:first-child{
+    border-top:2px solid var(--green);
+}
+
+.modal-metric:nth-child(3){
+    border-top:2px solid var(--red);
+}
+
+.modal-content{
+    padding:0 22px 21px;
+}
+
+.modal-section{
+    border-top:1px solid var(--border);
+    padding:15px 0;
+    margin:0;
+}
+
+.modal-section h3{
+    font-size:11px;
+    margin-bottom:8px;
+    color:#e8f0eb;
+}
+
+.modal-section p{
+    font-size:10px;
+    line-height:1.65;
+    color:#8f9e95;
+}
+
+.modal-priority{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:#a7b4ab;
+    font-size:10px;
+}
+
+.priority-dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--yellow);
+}
+
+.interpretation-box{
+    padding:12px 13px;
+    border-radius:9px;
+    border:1px solid rgba(79,175,120,.14);
+    border-left:2px solid var(--green);
+    background:rgba(79,175,120,.035);
+}
+
+.observation-box{
+    padding:12px 13px;
+    border-radius:9px;
+    border:1px solid var(--border);
+    background:#0a120e;
+}
+
+@media(max-width:600px){
+    .modal-metrics{grid-template-columns:1fr}
+    .modal-head,.modal-content{padding-left:16px;padding-right:16px}
+}
+
+
+/* LOWER */
+.lower{
+    display:grid;
+    grid-template-columns:1.72fr 1fr;
+    gap:14px;
+    margin-top:14px;
+}
+
+.chart-panel{padding-bottom:10px}
+.chart-box{height:330px;padding:0 18px 18px}
+
+.alerts{padding-bottom:10px}
+.alert-list{padding:0 18px 18px;display:flex;flex-direction:column;gap:9px}
+
+.alert{
+    padding:12px;
+    border-radius:9px;
+    border:1px solid var(--border);
+    background:#0b130f;
+}
+
+.alert.critical{border-color:rgba(255,91,109,.25)}
+.alert.warning{border-color:rgba(231,191,53,.25)}
+
+.alert-title{
+    display:flex;gap:9px;align-items:center;
+    font-size:11px;font-weight:650;
+}
+
+.alert-title i{
+    width:8px;height:8px;border-radius:50%;
+    display:block;background:var(--green);
+}
+
+.alert.critical .alert-title i{background:var(--red)}
+.alert.warning .alert-title i{background:#f0c515}
+
+.alert p{
+    color:var(--muted);
+    font-size:10px;
+    line-height:1.5;
+    margin:7px 0 0 17px;
+}
+
+/* TABLE */
+.table-panel{
+    margin-top:14px;
+    padding:18px;
+    overflow:hidden;
+}
+
+.table-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:13px;
+}
+
+.table-head h2{font-size:15px}
+.table-head p{color:var(--dim);font-size:10px;margin-top:5px}
+
+.table-wrap{overflow:auto}
+
+table{width:100%;border-collapse:collapse;min-width:760px}
+
+th{
+    padding:10px 9px;
+    text-align:left;
+    border-bottom:1px solid var(--border);
+    color:#687970;
+    font-size:9px;
+    text-transform:uppercase;
+    letter-spacing:.55px;
+}
+
+td{
+    padding:13px 9px;
+    border-bottom:1px solid rgba(28,43,35,.75);
+    color:#c7d0ca;
+    font-size:10px;
+}
+
+tbody tr:hover{background:rgba(79,175,120,.025)}
+
+.t-name{font-weight:650;color:#edf4ef;font-size:11px}
+.t-sub{display:block;color:var(--dim);font-size:9px;margin-top:4px}
+
+.ndvi-cell{
+    display:flex;
+    align-items:center;
+    gap:9px;
+}
+
+.ndvi-bar{
+    width:55px;height:5px;
+    border-radius:999px;
+    background:#17231c;
+    overflow:hidden;
+}
+
+.ndvi-bar span{display:block;height:100%;background:var(--green)}
+
+.variation-down{color:#ff6678;font-weight:600}
+.variation-up{color:var(--orange)}
+
+.spark{
+    width:135px;height:28px;
+}
+
+.analyze{
+    border:1px solid #1e5a3c;
+    background:rgba(79,175,120,.045);
+    color:#69B98B;
+    border-radius:7px;
+    padding:7px 12px;
+    cursor:pointer;
+    font-size:10px;
+}
+
+.analyze:hover{background:var(--orange);color:#120d07}
+
+/* MODAL */
+.modal{
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:50;
+    background:rgba(2,6,4,.82);
+    backdrop-filter:blur(8px);
+}
+
+.modal.open{display:flex}
+
+.modal-card{
+    width:min(620px,100%);
+    max-height:90vh;
+    overflow:auto;
+    background:linear-gradient(145deg,#111b15,#0b120f);
+    border:1px solid var(--border2);
+    border-radius:14px;
+    padding:22px;
+    box-shadow:0 30px 100px rgba(0,0,0,.55);
+}
+
+.modal-head{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    padding-bottom:17px;border-bottom:1px solid var(--border);
+}
+
+.modal-head small{color:var(--dim);font-size:9px}
+.modal-head h2{margin-top:5px;font-size:19px}
+.close{
+    width:34px;height:34px;border-radius:50%;
+    border:1px solid var(--border);
+    background:#111b15;color:#9aa89f;
+    cursor:pointer;font-size:17px;
+}
+
+.modal-metrics{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:9px;
+    margin:16px 0;
+}
+
+.modal-metric{
+    background:#0b130f;
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:13px;
+}
+
+.modal-metric label{font-size:9px;color:var(--dim)}
+.modal-metric strong{display:block;font-size:20px;margin-top:7px}
+
+.modal-section{
+    border-top:1px solid var(--border);
+    padding-top:16px;
+    margin-top:15px;
+}
+
+.modal-section h3{font-size:12px;margin-bottom:9px}
+.modal-section p{font-size:10px;line-height:1.65;color:var(--muted)}
+
+.footer{
+    text-align:center;
+    color:#526158;
+    font-size:9px;
+    margin-top:20px;
+}
+
+@media(max-width:1100px){
+    .grid-top,.lower{grid-template-columns:1fr}
+}
+
+@media(max-width:760px){
+    .container{width:min(100% - 24px,1440px)}
+    .header{flex-direction:column}
+    .nav{gap:15px;overflow:auto}
+    .map-wrap{height:400px}
+    .detail-bottom{grid-template-columns:1fr}
+    .modal-metrics{grid-template-columns:1fr}
+}
+</style>
+
+<style>
+/* V3.3 — refinamento visual inspirado na projeção Orion */
+body{
+    background:
+        radial-gradient(circle at 12% 0%,rgba(79,175,120,.045),transparent 25%),
+        #050806;
+}
+
+.container{
+    width:min(1480px,calc(100% - 70px));
+    padding-top:21px;
+}
+
+.header{
+    padding-bottom:20px;
+}
+
+.brand-mark{
+    width:48px;
+    height:48px;
+    border-radius:13px;
+    background:#0d2116;
+    border-color:#21432f;
+}
+
+.brand h1{
+    font-size:27px;
+    font-weight:620;
+}
+
+.brand h1 span{
+    color:#d9822b;
+}
+
+.brand p{
+    font-size:11px;
+}
+
+.farm-pill{
+    background:#090f0c;
+    border-color:#1d2b23;
+    padding:11px 16px;
+}
+
+.nav{
+    height:54px;
+    margin-bottom:19px;
+}
+
+.nav button{
+    height:54px;
+    font-size:11px;
+}
+
+.nav button.active{
+    color:#d9822b;
+}
+
+.nav button.active:after{
+    background:#d9822b;
+}
+
+.demo{
+    min-height:51px;
+    background:rgba(213,174,53,.025);
+    border-color:rgba(213,174,53,.20);
+    margin-bottom:18px;
+}
+
+.panel{
+    background:linear-gradient(145deg,#0d1511,#09100c);
+    border-color:#1c2922;
+    border-radius:13px;
+}
+
+.panel-head{
+    padding:19px 20px 14px;
+}
+
+.panel-title h2{
+    font-size:14px;
+}
+
+.panel-title p{
+    font-size:10px;
+}
+
+.map-wrap{
+    margin:0 20px 20px;
+    height:485px;
+    border-radius:10px;
+    background:
+        linear-gradient(rgba(79,175,120,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(79,175,120,.035) 1px,transparent 1px),
+        radial-gradient(circle at 18% 50%,rgba(79,175,120,.13),transparent 34%),
+        #07100b;
+    background-size:36px 36px,36px 36px,auto,auto;
+}
+
+.detail-top{
+    padding:20px 20px 0;
+}
+
+.detail-top h2{
+    font-size:16px;
+}
+
+.big-number{
+    padding:18px 20px 9px;
+}
+
+.big-number strong{
+    font-size:57px;
+}
+
+.mini-chart{
+    margin:4px 20px 13px;
+}
+
+.indices{
+    padding:0 20px;
+    gap:15px;
+}
+
+.detail-bottom{
+    padding:18px 20px 0;
+}
+
+.lower{
+    margin-top:14px;
+}
+
+.chart-box{
+    height:335px;
+    padding:0 20px 19px;
+}
+
+.alert-list{
+    padding:0 20px 20px;
+}
+
+.table-panel{
+    margin-top:14px;
+    padding:19px 20px;
+}
+
+.table-head h2{
+    font-size:15px;
+}
+
+.analyze{
+    color:#d8a05e;
+    border-color:#5b4023;
+    background:rgba(217,130,43,.035);
+}
+
+.analyze:hover{
+    background:#d9822b;
+    border-color:#d9822b;
+    color:#100b06;
+}
+
+.footer{
+    color:#4f5e55;
+}
+</style>
+
+
+<style>
+/* V4.0 — layout inspired by the supplied Orion dashboard reference */
+:root{
+    --bg:#07111d;
+    --panel:#0c1a29;
+    --panel2:#102235;
+    --border:#20354a;
+    --border2:#29445c;
+    --text:#edf4f8;
+    --muted:#8295a8;
+    --dim:#607487;
+    --green:#28d783;
+    --green2:#1fb86f;
+    --orange:#d9822b;
+    --yellow:#e7bf35;
+    --red:#ff5265;
+    --blue:#39a9f5;
+    --purple:#9076e8;
+}
+
+body{
+    background:
+        radial-gradient(circle at 20% -10%,rgba(44,119,169,.13),transparent 28%),
+        linear-gradient(180deg,#07111d 0%,#08131f 100%);
+}
+
+.container{
+    width:min(1480px,calc(100% - 40px));
+    padding-top:18px;
+}
+
+.header{
+    padding-bottom:18px;
+    border-color:#172b3e;
+}
+
+.brand-mark{
+    background:linear-gradient(145deg,#0e2a3d,#0b1a27);
+    border-color:#1f4965;
+    color:#35d98a;
+}
+
+.brand h1 span{color:#edf4f8}
+.brand h1{font-size:24px}
+.brand p{color:#7890a4}
+
+.farm-pill{
+    background:#091522;
+    border-color:#1c3448;
+}
+
+.nav{
+    height:43px;
+    margin-bottom:13px;
+    border-color:#1a3043;
+}
+
+.nav button{
+    height:43px;
+    color:#7d91a4;
+}
+
+.nav button.active{
+    color:#35dc8a;
+}
+
+.nav button.active:after{
+    background:#35dc8a;
+}
+
+.demo{
+    min-height:43px;
+    margin-top:14px;
+    margin-bottom:12px;
+    padding:8px 12px;
+    border-left:3px solid #e2bd36;
+    background:rgba(226,189,54,.035);
+    border-color:rgba(226,189,54,.22);
+}
+
+.grid-top{
+    grid-template-columns:2.05fr 1fr;
+    gap:10px;
+}
+
+.panel{
+    background:linear-gradient(145deg,#0d1c2b,#0b1825);
+    border-color:#1d3347;
+    border-radius:8px;
+    box-shadow:0 7px 22px rgba(0,0,0,.20);
+}
+
+.panel-head{
+    padding:13px 14px 10px;
+}
+
+.panel-title h2{font-size:12px}
+.panel-title p{font-size:9px;color:#70859a}
+
+.map-wrap{
+    height:390px;
+    margin:0 14px 14px;
+    border-radius:6px;
+    border-color:#1d3549;
+    background:
+        linear-gradient(rgba(60,116,151,.045) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(60,116,151,.045) 1px,transparent 1px),
+        radial-gradient(circle at 18% 50%,rgba(41,146,101,.13),transparent 34%),
+        #071521;
+    background-size:32px 32px,32px 32px,auto,auto;
+}
+
+.detail-top{padding:14px 14px 0}
+.detail-top h2{font-size:14px}
+.detail-top p{font-size:9px}
+.big-number{padding:12px 14px 7px}
+.big-number strong{font-size:47px}
+.big-number p{font-size:9px}
+.mini-chart{height:67px;margin:3px 14px 9px}
+.indices{padding:0 14px;gap:10px}
+.index-line{grid-template-columns:52px 1fr 34px;gap:8px}
+.index-line label{font-size:9px}
+.index-line small{font-size:7px}
+.track{height:5px}
+.detail-bottom{padding:12px 14px 0;gap:7px}
+.small-card{padding:10px}
+.small-card strong{font-size:15px}
+
+.lower{
+    grid-template-columns:1.75fr 1fr;
+    gap:10px;
+    margin-top:10px;
+}
+
+.chart-box{height:265px;padding:0 14px 14px}
+.alert-list{padding:0 14px 14px;gap:7px}
+.alert{padding:9px}
+.alert-title{font-size:10px}
+.alert p{font-size:9px}
+
+.table-panel{
+    margin-top:10px;
+    padding:13px 14px;
+}
+
+.table-head{margin-bottom:8px}
+.table-head h2{font-size:13px}
+.table-head p{font-size:9px}
+th{padding:8px 7px;font-size:8px}
+td{padding:9px 7px;font-size:9px}
+
+.footer{margin-top:11px}
+
+/* Reference-style compact KPI strip */
+.reference-kpis{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:10px;
+    margin-bottom:10px;
+}
+.reference-kpi{
+    min-height:92px;
+    padding:12px 14px;
+    position:relative;
+    overflow:hidden;
+    border:1px solid #20374b;
+    border-radius:7px;
+    background:linear-gradient(145deg,#0d1d2d,#0a1724);
+}
+.reference-kpi:before{
+    content:"";
+    position:absolute;
+    left:0;top:0;bottom:0;
+    width:3px;
+    background:#2bd987;
+}
+.reference-kpi.blue:before{background:#36a9f3}
+.reference-kpi.yellow:before{background:#e6c23d}
+.reference-kpi.red:before{background:#ff5064}
+.reference-kpi .kpi-label{
+    color:#8195a8;
+    font-size:8px;
+    text-transform:uppercase;
+    letter-spacing:.55px;
+}
+.reference-kpi .kpi-value{
+    margin-top:8px;
+    font-size:23px;
+    font-weight:650;
+}
+.reference-kpi .kpi-sub{
+    margin-top:5px;
+    color:#6f8497;
+    font-size:8px;
+}
+.reference-kpi .kpi-trend{
+    position:absolute;
+    right:12px;
+    top:39px;
+    font-size:9px;
+    color:#37d987;
+}
+.reference-kpi .kpi-trend.down{color:#ff6475}
+.reference-kpi .kpi-trend.warn{color:#e4c13a}
+
+@media(max-width:1000px){
+    .reference-kpis{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:650px){
+    .container{width:calc(100% - 22px)}
+    .reference-kpis{grid-template-columns:1fr}
+}
+</style>
+
+<style>
+/* ===== Integração Orion API (analise.html) ===== */
+.header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.nav-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 13px;border:1px solid var(--border2);border-radius:999px;background:#0b1623;color:#a9bccd;font-size:11px;text-decoration:none;cursor:pointer}
+.nav-btn:hover{border-color:var(--green);color:#e9f6ef}
+.farm-select{padding:9px 12px;border:1px solid var(--border2);border-radius:999px;background:#0b1623;color:#e9f2ec;font-size:11px;max-width:240px}
+.demo.real{border-color:rgba(40,215,131,.25);border-left-color:var(--green);background:rgba(40,215,131,.04);color:#8fd9b0}
+.demo.real strong{color:#b9f0d1}
+.demo.error{border-color:rgba(255,82,101,.32);border-left-color:var(--red);background:rgba(255,82,101,.05);color:#ff9aa6}
+.demo.error strong{color:#ffc2c9}
+.demo.loading{border-color:rgba(57,169,245,.28);border-left-color:var(--blue);background:rgba(57,169,245,.04);color:#9cc9e8}
+.demo.loading strong{color:#c4e3f7}
+.alert.ok{border-color:rgba(40,215,131,.22)}
+.alert.ok .alert-title i{background:var(--green)}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.4px;border:1px solid transparent}
+.badge-normal{color:#5fe39d;background:rgba(40,215,131,.10);border-color:rgba(40,215,131,.28)}
+.badge-attention{color:#efcf5a;background:rgba(231,191,53,.10);border-color:rgba(231,191,53,.30)}
+.badge-critical{color:#ff7b8b;background:rgba(255,82,101,.10);border-color:rgba(255,82,101,.30)}
+.map-note{position:absolute;right:14px;bottom:14px;z-index:3;max-width:260px;padding:7px 10px;border:1px solid rgba(36,56,46,.8);border-radius:7px;background:rgba(7,12,9,.82);font-size:9px;color:#a4b0a9;backdrop-filter:blur(5px)}
+.table-note{margin-top:12px;color:var(--dim);font-size:10px}
+.is-loading .panel,.is-loading .reference-kpi{opacity:.55;transition:opacity .2s}
+</style>
+
+</head>
+
+<body>
+<div class="container" id="app">
+<header class="header">
+    <div class="brand">
+        <div class="brand-mark">🌱</div>
+        <div>
+            <h1><span>ORION</span> Análise agronômica</h1>
+            <p>Leitura das condições dos talhões por índices espectrais</p>
+        </div>
+    </div>
+    <div class="header-actions">
+        <div class="farm-pill">
+            <span class="dot"></span>
+            <strong id="farmName">Carregando…</strong>
+            <span>•</span>
+            <span id="farmArea">—</span>
+        </div>
+        <select class="farm-select" id="farmSelect" aria-label="Fazenda" hidden></select>
+        <a class="nav-btn" id="link3d" href="index.html">Simulador 3D ↗</a>
+        <a class="nav-btn" href="fazendas.html">Fazendas</a>
+        <button class="nav-btn" type="button" id="btnLogout">Sair</button>
+    </div>
+</header>
+
+<div class="demo loading" id="banner">
+    ⏳ <strong>Carregando análise…</strong> consultando a API Orion.
+</div>
+
+<section class="reference-kpis">
+    <div class="reference-kpi">
+        <div class="kpi-label">Índice de vegetação (NDVI)</div>
+        <div class="kpi-value" id="kpiNdvi">—</div>
+        <div class="kpi-sub" id="kpiNdviSub">&nbsp;</div>
+        <div class="kpi-trend" id="kpiNdviTrend">&nbsp;</div>
+    </div>
+    <div class="reference-kpi blue">
+        <div class="kpi-label">Índice de umidade (NDMI)</div>
+        <div class="kpi-value" id="kpiNdmi">—</div>
+        <div class="kpi-sub" id="kpiNdmiSub">&nbsp;</div>
+        <div class="kpi-trend" id="kpiNdmiTrend">&nbsp;</div>
+    </div>
+    <div class="reference-kpi">
+        <div class="kpi-label">Baixa umidade (área NDMI)</div>
+        <div class="kpi-value" id="kpiDry">—</div>
+        <div class="kpi-sub" id="kpiDrySub">&nbsp;</div>
+        <div class="kpi-trend" id="kpiDryTrend">&nbsp;</div>
+    </div>
+    <div class="reference-kpi yellow">
+        <div class="kpi-label">Área em atenção</div>
+        <div class="kpi-value" id="kpiAttention">—</div>
+        <div class="kpi-sub" id="kpiAttentionSub">&nbsp;</div>
+    </div>
+    <div class="reference-kpi red">
+        <div class="kpi-label">Área crítica</div>
+        <div class="kpi-value" id="kpiCritical">—</div>
+        <div class="kpi-sub" id="kpiCriticalSub">&nbsp;</div>
+    </div>
+</section>
+
+<section class="grid-top">
+    <!-- MAPA -->
+    <div class="panel map-panel">
+        <div class="panel-head">
+            <div class="panel-title">
+                <h2>Mapa dos talhões</h2>
+                <p id="mapSubtitle">Cor pela condição da última passagem</p>
+            </div>
+            <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">—</span></div>
+        </div>
+        <div class="map-wrap">
+            <svg class="map-svg" id="mapSvg" viewBox="0 0 900 500" preserveAspectRatio="xMidYMid meet"></svg>
+            <div class="map-legend">
+                <span class="legend-item"><i class="legend-dot legend-normal"></i>Normal</span>
+                <span class="legend-item"><i class="legend-dot legend-attention"></i>Atenção</span>
+                <span class="legend-item"><i class="legend-dot legend-critical"></i>Crítico</span>
+            </div>
+            <div class="map-note" id="mapNote" hidden></div>
+        </div>
+    </div>
+
+    <!-- DETALHE -->
+    <div class="panel detail">
+        <div class="detail-top">
+            <div>
+                <h2 id="detailTitle">—</h2>
+                <p id="detailMeta">—</p>
+            </div>
+            <button class="link-btn" type="button" id="btnAnalyze">ver a análise</button>
+        </div>
+        <div class="big-number">
+            <strong id="detailNdvi">—</strong>
+            <span id="detailVariation"></span>
+            <p id="detailIndexLabel"></p>
+        </div>
+        <div class="mini-chart">
+            <canvas id="miniChart"></canvas>
+        </div>
+        <div class="indices">
+            <div class="index-line">
+                <div><label>NDVI</label><small>Vegetação</small></div>
+                <div class="track"><div id="barNdvi" class="fill ndvi" style="width:0%"></div></div>
+                <strong id="valNdvi">—</strong>
+            </div>
+            <div class="index-line">
+                <div><label>NDMI</label><small>Umidade</small></div>
+                <div class="track"><div id="barNdmi" class="fill ndmi" style="width:0%"></div></div>
+                <strong id="valNdmi">—</strong>
+            </div>
+            <div class="index-line">
+                <div><label>NDRE</label><small>Clorofila</small></div>
+                <div class="track"><div id="barNdre" class="fill ndre" style="width:0%"></div></div>
+                <strong id="valNdre">—</strong>
+            </div>
+            <div class="index-line">
+                <div><label>EVI</label><small>Biomassa</small></div>
+                <div class="track"><div id="barEvi" class="fill evi" style="width:0%"></div></div>
+                <strong id="valEvi">—</strong>
+            </div>
+        </div>
+        <div class="detail-bottom">
+            <div class="small-card warn">
+                <span>Área em atenção</span>
+                <strong id="attentionArea">—</strong>
+            </div>
+            <div class="small-card danger">
+                <span>Área crítica</span>
+                <strong id="criticalArea">—</strong>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="lower">
+    <div class="panel chart-panel">
+        <div class="panel-head">
+            <div class="panel-title">
+                <h2 id="evolutionTitle">Evolução da vegetação</h2>
+                <p id="evolutionSubtitle">—</p>
+            </div>
+            <div style="display:flex;gap:7px">
+                <select class="period-selector" id="periodSelector">
+                    <option value="90">Últimos 90 dias</option>
+                    <option value="180" selected>Últimos 180 dias</option>
+                    <option value="0">Todo o período</option>
+                </select>
+                <select class="period-selector" id="indexSelector">
+                    <option value="ndvi">NDVI</option>
+                    <option value="ndmi">NDMI</option>
+                    <option value="ndre">NDRE</option>
+                    <option value="evi">EVI</option>
+                </select>
+            </div>
+        </div>
+        <div class="chart-box">
+            <canvas id="evolutionChart"></canvas>
+        </div>
+    </div>
+    <div class="panel alerts">
+        <div class="panel-head">
+            <div class="panel-title">
+                <h2>Pontos de acompanhamento</h2>
+                <p>Gerados a partir da última passagem</p>
+            </div>
+        </div>
+        <div class="alert-list" id="alertList"></div>
+    </div>
+</section>
+
+<section class="panel table-panel">
+    <div class="table-head">
+        <div>
+            <h2>Talhões</h2>
+            <p>Ordenados por prioridade de acompanhamento · selecione um talhão para ver a leitura</p>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Talhão</th>
+                    <th>NDVI</th>
+                    <th>Área</th>
+                    <th>Variação</th>
+                    <th>Série</th>
+                    <th>Condição</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody id="talhoesBody"></tbody>
+        </table>
+    </div>
+    <p class="table-note" id="tableNote"></p>
+</section>
+
+<div class="footer">
+    Orion • Módulo de Análise Agronômica • Dados via API Orion (<code>/api/analytics/farm/{id}</code>)
+</div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+    <div class="modal-card">
+        <div class="modal-head">
+            <div>
+                <div class="modal-kicker">Análise do talhão</div>
+                <div class="modal-title-row">
+                    <h2 id="modalTitle">—</h2>
+                    <span class="modal-status normal" id="modalStatus">NORMAL</span>
+                </div>
+            </div>
+            <button class="close" type="button" id="btnCloseModal">×</button>
+        </div>
+        <div class="modal-metrics">
+            <div class="modal-metric">
+                <label id="modalIndexLabel">NDVI</label>
+                <strong id="modalIndexValue">—</strong>
+            </div>
+            <div class="modal-metric">
+                <label>Área</label>
+                <strong id="modalArea">—</strong>
+            </div>
+            <div class="modal-metric">
+                <label>Variação</label>
+                <strong id="modalVariation">—</strong>
+            </div>
+        </div>
+        <div class="modal-content">
+            <div class="modal-section">
+                <h3>Prioridade</h3>
+                <div class="modal-priority">
+                    <span class="priority-dot"></span>
+                    <span id="modalPriority">—</span>
+                </div>
+            </div>
+            <div class="modal-section">
+                <h3>Interpretação</h3>
+                <div class="interpretation-box"><p id="modalInterpretation"></p></div>
+            </div>
+            <div class="modal-section">
+                <h3>Observação</h3>
+                <div class="observation-box"><p id="modalObservation"></p></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+/*
+=========================================================
+ ORION • ANÁLISE AGRONÔMICA — integrada à API
+ --------------------------------------------------------
+ Fontes (todas autenticadas com o JWT do app.js):
+   GET /api/farms                              → fazendas/talhões do usuário
+   GET /api/analytics/farm/{id}?layer={índice} → série temporal + zonas
+
+ Observação importante: a API calcula os índices POR FAZENDA
+ (um talhão resolvido por fazenda), não por talhão. Por isso a
+ condição exibida vale para o conjunto e é replicada nos talhões
+ cadastrados — a interface avisa isso ao usuário.
+=========================================================
+*/
+
+const LAYERS = ["ndvi", "ndmi", "ndre", "evi"];
+
+// Critérios de classificação (heurística do módulo — ajuste aqui).
+// pct* = % da área da fazenda nas zonas "stress"/"medium" da camada NDVI.
+const THRESHOLDS = {
+    criticalStressPct: 25,   // ≥ 25% da área em estresse → CRÍTICO
+    attentionStressPct: 10,  // ≥ 10% da área em estresse → ATENÇÃO
+    criticalMean: 0.40,      // índice médio < 0,40 → CRÍTICO
+    attentionMean: 0.55,     // índice médio < 0,55 → ATENÇÃO
+    attentionDrop: -10       // queda ≤ -10% vs passagem anterior → ATENÇÃO
+};
+
+const state = {
+    farms: [],
+    farm: null,
+    series: {},          // { ndvi: timeline[], ... }
+    yieldPredictions: null,
+    selectedTalhao: null,
+    currentIndex: "ndvi",
+    periodDays: 180
+};
+
+let evolutionChart = null;
+let miniChart = null;
+let loadToken = 0;       // evita corrida ao trocar de fazenda rapidamente
+
+/* ---------------------------------------------------------- utils */
+const $ = id => document.getElementById(id);
+
+function esc(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => (
+        {"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"}[c]
+    ));
+}
+
+function fmt(v) {
+    return Number(v).toFixed(2).replace(".", ",");
+}
+
+function fmtHa(v) {
+    return Number(v).toLocaleString("pt-BR", {minimumFractionDigits: 1, maximumFractionDigits: 1}) + " ha";
+}
+
+function fmtPct(v, digits = 1) {
+    return Number(v).toLocaleString("pt-BR", {minimumFractionDigits: digits, maximumFractionDigits: digits}) + "%";
+}
+
+function shortDate(d) {           // "2026-03-08" → "08/03"
+    const p = String(d).split("-");
+    return p.length === 3 ? `${p[2]}/${p[1]}` : d;
+}
+
+function setText(id, value) {
+    const el = $(id);
+    if (el) el.textContent = value;
+}
+
+function indexName(key) {
+    return {ndvi: "NDVI", ndmi: "NDMI", ndre: "NDRE", evi: "EVI"}[key] || "NDVI";
+}
+
+function indexDescription(key) {
+    return {ndvi: "Vegetação", ndmi: "Umidade", ndre: "Clorofila", evi: "Biomassa"}[key] || "";
+}
+
+/* ---------------------------------------------------------- API */
+async function apiGet(path) {
+    const res = await fetch(`${API_URL}${path}`, {headers: {...authHeaders()}});
+    if (res.status === 401) {
+        AuthService.logout();
+        window.location.href = "auth.html";
+        throw new Error("Sessão expirada — redirecionando para o login.");
+    }
+    if (res.status === 403) throw new Error("Você não tem permissão para ver esta fazenda.");
+    if (res.status === 404) throw new Error("Fazenda não encontrada.");
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Falha na API (HTTP ${res.status}).`);
+    }
+    return res.json();
+}
+
+async function fetchAnalytics(farmId) {
+    const results = await Promise.allSettled(
+        LAYERS.map(layer => apiGet(`/analytics/farm/${farmId}?layer=${layer}`))
+    );
+    // NDVI é obrigatório; as demais camadas degradam com elegância.
+    if (results[0].status === "rejected") throw results[0].reason;
+
+    const series = {};
+    let yieldPredictions = null;
+    results.forEach((r, i) => {
+        if (r.status !== "fulfilled") { series[LAYERS[i]] = []; return; }
+        series[LAYERS[i]] = Array.isArray(r.value.timeline) ? r.value.timeline : [];
+        if (LAYERS[i] === "ndvi") yieldPredictions = r.value.yield_predictions || null;
+    });
+    return {series, yieldPredictions};
+}
+
+/* ---------------------------------------------------------- cálculo */
+function lastPoint(layer) {
+    const tl = state.series[layer] || [];
+    return tl.length ? tl[tl.length - 1] : null;
+}
+
+// Variação % da última passagem vs. a anterior (null se não houver base).
+function variationPct(layer) {
+    const tl = state.series[layer] || [];
+    if (tl.length < 2) return null;
+    const cur = tl[tl.length - 1].mean;
+    const prev = tl[tl.length - 2].mean;
+    if (!prev) return null;
+    return ((cur - prev) / prev) * 100;
+}
+
+function filterPeriod(timeline, days) {
+    if (!timeline.length || !days) return timeline;
+    const last = new Date(timeline[timeline.length - 1].date + "T00:00:00Z");
+    const cutoff = last.getTime() - days * 86400000;
+    const out = timeline.filter(p => new Date(p.date + "T00:00:00Z").getTime() >= cutoff);
+    return out.length >= 2 ? out : timeline.slice(-2);
+}
+
+function classify() {
+    const p = lastPoint("ndvi");
+    if (!p) return {status: "SEM DADOS", cls: "attention", badge: "badge-attention", priority: "—"};
+    const stress = p.zones?.stress?.pct ?? 0;
+    const v = variationPct("ndvi");
+    let status = "NORMAL";
+    if (stress >= THRESHOLDS.criticalStressPct || p.mean < THRESHOLDS.criticalMean) status = "CRÍTICO";
+    else if (stress >= THRESHOLDS.attentionStressPct || p.mean < THRESHOLDS.attentionMean ||
+             (v !== null && v <= THRESHOLDS.attentionDrop)) status = "ATENÇÃO";
+
+    return {
+        status,
+        cls: {"CRÍTICO": "critical", "ATENÇÃO": "attention", "NORMAL": "normal"}[status],
+        badge: {"CRÍTICO": "badge-critical", "ATENÇÃO": "badge-attention", "NORMAL": "badge-normal"}[status],
+        priority: {"CRÍTICO": "Alta", "ATENÇÃO": "Média", "NORMAL": "Baixa"}[status]
+    };
+}
+
+function originSummary() {
+    const tl = state.series.ndvi || [];
+    const real = tl.filter(p => p.data_origin === "sentinel").length;
+    const last = tl.length ? tl[tl.length - 1] : null;
+    return {total: tl.length, real, lastOrigin: last ? last.data_origin : null, lastDate: last ? last.formatted_date : null};
+}
+
+/* ---------------------------------------------------------- talhões */
+function getTalhoes() {
+    const f = state.farm;
+    if (!f) return [];
+    if (f.talhoes && f.talhoes.length) return f.talhoes;
+    // Fazenda sem talhão cadastrado (ex.: demo): talhão sintético = fazenda.
+    return [{id: "farm", name: f.name, area: f.total_area, crop: "—", kml_coordinates: null}];
+}
+
+function parseGeometry(raw) {
+    // Formato do projeto: JSON [[lat, lon], ...]
+    if (!raw) return null;
+    try {
+        const arr = typeof raw === "string" ? JSON.parse(raw) : raw;
+        if (!Array.isArray(arr) || arr.length < 3) return null;
+        const pts = arr.map(p => [Number(p[0]), Number(p[1])]);
+        return pts.every(p => Number.isFinite(p[0]) && Number.isFinite(p[1])) ? pts : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+// Projeta [[lat,lon]...] de todos os talhões num viewBox 900x500, mantendo proporção.
+function projectPolygons(polys, W = 900, H = 500, pad = 40) {
+    const all = polys.flat();
+    if (!all.length) return [];
+    const lat0 = all.reduce((s, p) => s + p[0], 0) / all.length;
+    const kx = Math.cos(lat0 * Math.PI / 180);
+    const xs = all.map(p => p[1] * kx), ys = all.map(p => -p[0]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const w = (maxX - minX) || 1e-9, h = (maxY - minY) || 1e-9;
+    const scale = Math.min((W - 2 * pad) / w, (H - 2 * pad) / h);
+    const offX = (W - w * scale) / 2, offY = (H - h * scale) / 2;
+    return polys.map(poly => poly.map(p => [
+        (p[1] * kx - minX) * scale + offX,
+        (-p[0] - minY) * scale + offY
+    ]));
+}
+
+function centroid(pts) {
+    return [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
+}
+
+function renderMap() {
+    const svg = $("mapSvg");
+    const talhoes = getTalhoes();
+    const cond = classify();
+    const geoms = talhoes.map(t => parseGeometry(t.kml_coordinates));
+    const hasAll = geoms.every(Boolean);
+
+    let shapes;
+    if (hasAll) {
+        shapes = projectPolygons(geoms);
+    } else {
+        // Sem contorno: grade esquemática (um bloco por talhão).
+        const n = talhoes.length, cols = Math.ceil(Math.sqrt(n)), rows = Math.ceil(n / cols);
+        const cw = 800 / cols, ch = 420 / rows;
+        shapes = talhoes.map((_, i) => {
+            const x = 50 + (i % cols) * cw, y = 40 + Math.floor(i / cols) * ch;
+            return [[x + 6, y + 6], [x + cw - 6, y + 6], [x + cw - 6, y + ch - 6], [x + 6, y + ch - 6]];
+        });
+    }
+
+    svg.innerHTML = talhoes.map((t, i) => {
+        const pts = shapes[i].map(p => p.map(v => v.toFixed(1)).join(",")).join(" ");
+        const [cx, cy] = centroid(shapes[i]);
+        const sel = String(t.id) === String(state.selectedTalhao) ? " selected" : "";
+        return `<polygon class="plot ${cond.cls}${sel}" data-id="${esc(t.id)}" points="${pts}"></polygon>` +
+               `<text class="plot-label" x="${cx.toFixed(1)}" y="${cy.toFixed(1)}">${esc(String(t.name).slice(0, 14))}</text>` +
+               `<text class="plot-area" x="${cx.toFixed(1)}" y="${(cy + 19).toFixed(1)}">${fmtHa(t.area)}</text>`;
+    }).join("");
+
+    svg.querySelectorAll(".plot").forEach(p =>
+        p.addEventListener("click", () => selectTalhao(p.dataset.id)));
+
+    const note = $("mapNote");
+    note.hidden = hasAll;
+    if (!hasAll) note.textContent = "Contorno do talhão não cadastrado — representação esquemática.";
+}
+
+/* ---------------------------------------------------------- banner */
+function renderBanner() {
+    const o = originSummary();
+    const b = $("banner");
+    if (!o.total) {
+        b.className = "demo error";
+        b.innerHTML = "⚠️ <strong>Sem série temporal.</strong> A API não retornou passagens para esta fazenda.";
+        return;
+    }
+    if (o.lastOrigin === "sentinel") {
+        b.className = "demo real";
+        b.innerHTML = `✅ <strong>Dados Sentinel-2 L2A reais.</strong> ${o.real} de ${o.total} passagens com dado real · última passagem em ${esc(o.lastDate)}.`;
+    } else if (o.lastOrigin === "procedural") {
+        b.className = "demo";
+        b.innerHTML = `⚠️ <strong>Dados procedurais.</strong> A última passagem (${esc(o.lastDate)}) usa textura gerada, não medição Sentinel-2 real (${o.real} de ${o.total} passagens reais). Configure <code>CDSE_CLIENT_ID</code> e <code>CDSE_CLIENT_SECRET</code> em <code>backend/.env</code> para dados reais.`;
+    } else {
+        b.className = "demo";
+        b.innerHTML = `⚠️ <strong>Valores de contingência.</strong> Não há imagem nem dado real para a última passagem (${esc(o.lastDate || "—")}); os números são estimativas sintéticas e não devem ser usados como diagnóstico.`;
+    }
+}
+
+/* ---------------------------------------------------------- KPIs */
+function trendHtml(el, v, invert = false, suffix = "%") {
+    if (!el) return;
+    if (v === null || !Number.isFinite(v)) { el.textContent = " "; el.className = "kpi-trend"; return; }
+    const good = invert ? v <= 0 : v >= 0;
+    el.className = "kpi-trend" + (good ? "" : " down");
+    el.textContent = (v >= 0 ? "↑ +" : "↓ ") + Math.abs(v).toLocaleString("pt-BR", {minimumFractionDigits: 1, maximumFractionDigits: 1}) + suffix +
+        " vs passagem anterior";
+}
+
+function renderKpis() {
+    const nd = lastPoint("ndvi"), nm = lastPoint("ndmi");
+    const cond = classify();
+    const total = state.farm.total_area;
+
+    setText("kpiNdvi", nd ? fmt(nd.mean) : "—");
+    setText("kpiNdviSub", nd ? ({normal: "Condição favorável", attention: "Atenção", critical: "Condição crítica"}[cond.cls]) : "Sem dado");
+    trendHtml($("kpiNdviTrend"), variationPct("ndvi"));
+
+    setText("kpiNdmi", nm ? fmt(nm.mean) : "—");
+    setText("kpiNdmiSub", nm ? (nm.mean >= 0.5 ? "Umidade adequada" : nm.mean >= 0.35 ? "Umidade moderada" : "Umidade baixa") : "Sem dado");
+    trendHtml($("kpiNdmiTrend"), variationPct("ndmi"));
+
+    // Baixa umidade = % da área na zona "stress" da camada NDMI.
+    const dry = nm?.zones?.stress;
+    setText("kpiDry", dry ? fmtPct(dry.pct, 0) : "—");
+    setText("kpiDrySub", dry ? `${fmtHa(dry.ha)} com NDMI baixo` : "Sem dado");
+    const tl = state.series.ndmi || [];
+    const prevDry = tl.length > 1 ? tl[tl.length - 2].zones?.stress?.pct : null;
+    trendHtml($("kpiDryTrend"), dry && prevDry != null ? dry.pct - prevDry : null, true, " p.p.");
+
+    const mid = nd?.zones?.medium, st = nd?.zones?.stress;
+    setText("kpiAttention", mid ? fmtHa(mid.ha) : "—");
+    setText("kpiAttentionSub", mid ? `${fmtPct(mid.pct)} da área total` : "Sem dado");
+    setText("kpiCritical", st ? fmtHa(st.ha) : "—");
+    setText("kpiCriticalSub", st ? `${fmtPct(st.pct)} da área total` : "Sem dado");
+    void total;
+}
+
+/* ---------------------------------------------------------- detalhe */
+function renderDetail() {
+    const talhao = getTalhoes().find(t => String(t.id) === String(state.selectedTalhao));
+    const cond = classify();
+    const idx = state.currentIndex;
+    const p = lastPoint(idx);
+    const v = variationPct(idx);
+
+    setText("detailTitle", talhao ? talhao.name : "—");
+    setText("detailMeta", talhao ? `${fmtHa(talhao.area)} • ${talhao.crop && talhao.crop !== "—" ? talhao.crop + " • " : ""}condição ${cond.status.toLowerCase()}` : "—");
+    setText("detailNdvi", p ? fmt(p.mean) : "—");
+
+    const vEl = $("detailVariation");
+    if (v === null) { vEl.textContent = ""; }
+    else {
+        vEl.textContent = (v >= 0 ? "↑ " : "↓ ") + fmtPct(Math.abs(v));
+        vEl.style.color = v >= 0 ? "var(--green)" : "var(--red)";
+    }
+    setText("detailIndexLabel", `Índice ${indexName(idx)} (${indexDescription(idx)}) · variação vs passagem anterior`);
+
+    const ids = {ndvi: "Ndvi", ndmi: "Ndmi", ndre: "Ndre", evi: "Evi"};
+    Object.entries(ids).forEach(([key, id]) => {
+        const lp = lastPoint(key);
+        setText("val" + id, lp ? fmt(lp.mean) : "—");
+        $("bar" + id).style.width = lp ? `${Math.max(0, Math.min(100, lp.mean * 100))}%` : "0%";
+    });
+
+    const z = p?.zones;
+    setText("attentionArea", z ? fmtHa(z.medium.ha) : "—");
+    setText("criticalArea", z ? fmtHa(z.stress.ha) : "—");
+
+    renderMiniChart();
+    renderEvolutionChart();
+}
+
+/* ---------------------------------------------------------- gráficos */
+function renderMiniChart() {
+    const tl = (state.series[state.currentIndex] || []).slice(-10);
+    miniChart.data.labels = tl.map(p => shortDate(p.date));
+    miniChart.data.datasets[0].data = tl.map(p => p.mean);
+    miniChart.data.datasets[0].label = indexName(state.currentIndex);
+    miniChart.update();
+}
+
+function renderEvolutionChart() {
+    const full = state.series[state.currentIndex] || [];
+    const tl = filterPeriod(full, state.periodDays);
+    const talhao = getTalhoes().find(t => String(t.id) === String(state.selectedTalhao));
+
+    evolutionChart.data.labels = tl.map(p => shortDate(p.date));
+    evolutionChart.data.datasets[0].data = tl.map(p => p.mean);
+    evolutionChart.data.datasets[0].label = talhao ? talhao.name : "Fazenda";
+    evolutionChart.$fullDates = tl.map(p => p.formatted_date);
+    evolutionChart.$origins = tl.map(p => p.data_origin);
+    evolutionChart.update();
+
+    setText("evolutionTitle", `Evolução da vegetação · ${talhao ? talhao.name : ""}`);
+    const periodTxt = state.periodDays ? `últimos ${state.periodDays} dias até a última passagem` : "todo o período disponível";
+    setText("evolutionSubtitle", `${indexName(state.currentIndex)} · ${tl.length} passagens · ${periodTxt}`);
+}
+
+/* ---------------------------------------------------------- alertas */
+function renderAlerts() {
+    const list = $("alertList");
+    const items = [];
+    const o = originSummary();
+    const nd = lastPoint("ndvi");
+    const vN = variationPct("ndvi"), vM = variationPct("ndmi");
+    const st = nd?.zones?.stress, mid = nd?.zones?.medium;
+
+    if (o.lastOrigin && o.lastOrigin !== "sentinel") {
+        items.push({cls: "warning", title: "Dados não reais na última passagem",
+            text: "Os valores vêm de textura procedural ou contingência. Use apenas como demonstração até configurar o Sentinel-2 real."});
+    }
+    if (st && st.pct >= THRESHOLDS.attentionStressPct) {
+        items.push({cls: st.pct >= THRESHOLDS.criticalStressPct ? "critical" : "warning",
+            title: `${fmtPct(st.pct)} da área em zona de estresse`,
+            text: `${fmtHa(st.ha)} com NDVI baixo na passagem de ${nd.formatted_date}. Vale uma vistoria em campo.`});
+    }
+    if (vN !== null && vN <= -5) {
+        items.push({cls: vN <= -10 ? "critical" : "warning",
+            title: `NDVI caiu ${fmtPct(Math.abs(vN))}`,
+            text: "Redução em relação à passagem anterior. Comparar com clima e manejo recente antes de concluir."});
+    }
+    if (vM !== null && vM <= -8) {
+        items.push({cls: "warning", title: `NDMI caiu ${fmtPct(Math.abs(vM))}`,
+            text: "Queda de umidade da vegetação entre as duas últimas passagens."});
+    }
+    if (mid && mid.pct >= 30) {
+        items.push({cls: "warning", title: `${fmtHa(mid.ha)} em zona intermediária`,
+            text: "Parcela relevante da área em vigor médio — acompanhar nas próximas passagens."});
+    }
+    if (!items.length) {
+        items.push({cls: "ok", title: "Sem pontos de atenção",
+            text: "Nenhuma queda relevante ou área de estresse acima dos limites na última passagem."});
+    }
+
+    list.innerHTML = items.map(a => `
+        <div class="alert ${a.cls}">
+            <div class="alert-title"><i></i>${esc(a.title)}</div>
+            <p>${esc(a.text)}</p>
+        </div>`).join("");
+}
+
+/* ---------------------------------------------------------- tabela */
+function sparkPoints(values) {
+    if (values.length < 2) return "0,14 135,14";
+    const min = Math.min(...values), max = Math.max(...values), span = (max - min) || 1;
+    return values.map((v, i) => `${(i / (values.length - 1) * 135).toFixed(1)},${(24 - ((v - min) / span) * 20).toFixed(1)}`).join(" ");
+}
+
+function renderTable() {
+    const cond = classify();
+    const nd = lastPoint("ndvi");
+    const v = variationPct("ndvi");
+    const vals = (state.series.ndvi || []).map(p => p.mean);
+    const color = cond.cls === "critical" ? "#d74a1b" : cond.cls === "attention" ? "#e2ad10" : "#2dca70";
+    const vTxt = v === null ? "—" : `${v < 0 ? "↓ " : "↑ "}${fmtPct(Math.abs(v))}`;
+    const vCls = v === null ? "" : v < 0 ? "variation-down" : "variation-up";
+    const sub = cond.cls === "critical" ? "Prioridade alta" : cond.cls === "attention" ? "Em acompanhamento" : "Estável";
+
+    $("talhoesBody").innerHTML = getTalhoes().map(t => `
+        <tr>
+            <td><span class="t-name">${esc(t.name)}</span><span class="t-sub">${sub}</span></td>
+            <td><div class="ndvi-cell"><strong>${nd ? fmt(nd.mean) : "—"}</strong>
+                <span class="ndvi-bar"><span style="width:${nd ? nd.mean * 100 : 0}%"></span></span></div></td>
+            <td>${fmtHa(t.area)}</td>
+            <td class="${vCls}">${vTxt}</td>
+            <td><svg class="spark" viewBox="0 0 135 28"><polyline points="${sparkPoints(vals)}" fill="none" stroke="${color}" stroke-width="2"/></svg></td>
+            <td><span class="badge ${cond.badge}">${cond.status}</span></td>
+            <td><button class="analyze" type="button" data-id="${esc(t.id)}">Analisar</button></td>
+        </tr>`).join("");
+
+    $("talhoesBody").querySelectorAll(".analyze").forEach(b =>
+        b.addEventListener("click", () => abrirAnalise(b.dataset.id)));
+
+    setText("tableNote", getTalhoes().length > 1
+        ? "Os índices são calculados por fazenda pela API atual; a condição é replicada em todos os talhões cadastrados."
+        : "");
+}
+
+/* ---------------------------------------------------------- modal */
+function interpretation(cond) {
+    if (cond.cls === "critical")
+        return "Parcela relevante da área em estresse ou índice médio muito baixo. Recomenda-se acompanhamento prioritário e validação em campo.";
+    if (cond.cls === "attention")
+        return "Há sinal de redução de vigor ou área em zona de estresse. Merece acompanhamento nas próximas passagens.";
+    return "Condição estável na última passagem, sem indicação de redução relevante.";
+}
+
+function abrirAnalise(id) {
+    selectTalhao(id, false);
+    const talhao = getTalhoes().find(t => String(t.id) === String(id));
+    if (!talhao) return;
+    const cond = classify();
+    const idx = state.currentIndex;
+    const p = lastPoint(idx), v = variationPct(idx);
+
+    setText("modalTitle", talhao.name);
+    setText("modalIndexLabel", indexName(idx));
+    setText("modalIndexValue", p ? fmt(p.mean) : "—");
+    setText("modalArea", fmtHa(talhao.area));
+    setText("modalVariation", v === null ? "—" : (v >= 0 ? "+" : "-") + fmtPct(Math.abs(v)));
+    $("modalStatus").textContent = cond.status;
+    $("modalStatus").className = `modal-status ${cond.cls}`;
+    setText("modalPriority", cond.priority);
+    setText("modalInterpretation", interpretation(cond));
+
+    const o = originSummary();
+    setText("modalObservation", o.lastOrigin === "sentinel"
+        ? "A leitura espectral é apoio para investigação, não diagnóstico isolado. Confirme em campo."
+        : "Dado não real (procedural/contingência): leitura apenas demonstrativa, não use como diagnóstico.");
+    $("modal").classList.add("open");
+}
+
+function fecharModal() { $("modal").classList.remove("open"); }
+
+/* ---------------------------------------------------------- seleção / render geral */
+function selectTalhao(id, rerender = true) {
+    state.selectedTalhao = id;
+    document.querySelectorAll(".plot").forEach(p =>
+        p.classList.toggle("selected", p.dataset.id === String(id)));
+    if (rerender) renderDetail();
+}
+
+function renderAll() {
+    const f = state.farm;
+    setText("farmName", f.name);
+    setText("farmArea", `${Number(f.total_area).toLocaleString("pt-BR", {minimumFractionDigits: 2, maximumFractionDigits: 2})} ha monitorados`);
+    $("link3d").href = `index.html?farm_id=${encodeURIComponent(f.id)}`;
+
+    const talhoes = getTalhoes();
+    if (!talhoes.some(t => String(t.id) === String(state.selectedTalhao))) state.selectedTalhao = talhoes[0].id;
+
+    const cond = classify();
+    setText("statusText", {normal: "Condição predominantemente estável", attention: "Pontos em atenção", critical: "Há área crítica"}[cond.cls] || "—");
+    $("statusDot").style.background = {normal: "var(--green)", attention: "var(--yellow)", critical: "var(--red)"}[cond.cls] || "var(--dim)";
+    setText("mapSubtitle", "Cor pela condição da última passagem · índices calculados para a fazenda");
+
+    renderBanner();
+    renderKpis();
+    renderMap();
+    renderTable();
+    renderAlerts();
+    renderDetail();
+}
+
+/* ---------------------------------------------------------- carga */
+async function loadFarm(farmId) {
+    const token = ++loadToken;
+    $("app").classList.add("is-loading");
+    $("banner").className = "demo loading";
+    $("banner").innerHTML = "⏳ <strong>Carregando análise…</strong> consultando a API Orion (pode levar alguns segundos).";
+
+    try {
+        const farm = await apiGet(`/farms/${farmId}`);
+        const data = await fetchAnalytics(farmId);
+        if (token !== loadToken) return;          // outra fazenda foi escolhida no meio
+        state.farm = farm;
+        state.series = data.series;
+        state.yieldPredictions = data.yieldPredictions;
+        state.selectedTalhao = null;
+        renderAll();
+    } catch (err) {
+        if (token !== loadToken) return;
+        console.error(err);
+        $("banner").className = "demo error";
+        $("banner").innerHTML = `⚠️ <strong>Não foi possível carregar a análise.</strong> ${esc(err.message)}`;
+    } finally {
+        if (token === loadToken) $("app").classList.remove("is-loading");
+    }
+}
+
+function initCharts() {
+    miniChart = new Chart($("miniChart"), {
+        type: "line",
+        data: {labels: [], datasets: [{data: [], borderColor: "#4FAF78", borderWidth: 2, pointRadius: 0, tension: .4, fill: false}]},
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {legend: {display: false}},
+            scales: {x: {display: false}, y: {display: false, min: 0, max: 1}}
+        }
+    });
+
+    evolutionChart = new Chart($("evolutionChart"), {
+        type: "line",
+        data: {labels: [], datasets: [{
+            label: "Fazenda", data: [],
+            borderColor: "#4FAF78", backgroundColor: "rgba(79,175,120,.10)",
+            borderWidth: 2, pointRadius: 3, pointBackgroundColor: "#4FAF78", tension: .35, fill: true
+        }]},
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: {mode: "index", intersect: false},
+            plugins: {
+                legend: {display: true, labels: {color: "#78877e", boxWidth: 18, font: {size: 9}}},
+                tooltip: {
+                    backgroundColor: "#0b120f", borderColor: "#26382e", borderWidth: 1,
+                    titleColor: "#edf4ef", bodyColor: "#9aa89f",
+                    callbacks: {
+                        title: items => {
+                            const ch = evolutionChart, i = items[0].dataIndex;
+                            return (ch.$fullDates && ch.$fullDates[i]) || items[0].label;
+                        },
+                        label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}`,
+                        afterLabel: c => {
+                            const o = evolutionChart.$origins && evolutionChart.$origins[c.dataIndex];
+                            return o ? ` origem: ${{sentinel: "Sentinel-2 real", procedural: "procedural", fallback: "contingência"}[o] || o}` : "";
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {min: 0, max: 1, grid: {color: "rgba(36,55,44,.45)"}, ticks: {color: "#64736a", font: {size: 9}}},
+                x: {grid: {display: false}, ticks: {color: "#64736a", font: {size: 9}}}
+            }
+        }
+    });
+}
+
+async function init() {
+    if (!AuthService.getAuthToken()) { window.location.href = "auth.html"; return; }
+
+    initCharts();
+
+    $("indexSelector").addEventListener("change", function () { state.currentIndex = this.value; if (state.farm) renderDetail(); });
+    $("periodSelector").addEventListener("change", function () { state.periodDays = Number(this.value); if (state.farm) renderEvolutionChart(); });
+    $("btnAnalyze").addEventListener("click", () => state.selectedTalhao != null && abrirAnalise(state.selectedTalhao));
+    $("btnCloseModal").addEventListener("click", fecharModal);
+    $("modal").addEventListener("click", e => { if (e.target.id === "modal") fecharModal(); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") fecharModal(); });
+    $("btnLogout").addEventListener("click", () => { AuthService.logout(); window.location.href = "auth.html"; });
+    $("farmSelect").addEventListener("change", function () {
+        const url = new URL(window.location.href);
+        url.searchParams.set("farm_id", this.value);
+        history.replaceState(null, "", url);
+        loadFarm(this.value);
+    });
+
+    try {
+        state.farms = await apiGet("/farms");
+    } catch (err) {
+        $("banner").className = "demo error";
+        $("banner").innerHTML = `⚠️ <strong>Não foi possível listar as fazendas.</strong> ${esc(err.message)}`;
+        return;
+    }
+    if (!state.farms.length) {
+        $("banner").className = "demo error";
+        $("banner").innerHTML = "⚠️ <strong>Nenhuma fazenda cadastrada.</strong> Cadastre uma em <a href=\"fazendas.html\" style=\"color:inherit\">Fazendas</a>.";
+        return;
+    }
+
+    const sel = $("farmSelect");
+    sel.innerHTML = state.farms.map(f => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join("");
+    sel.hidden = state.farms.length < 2;
+
+    const wanted = new URLSearchParams(window.location.search).get("farm_id");
+    const first = state.farms.find(f => String(f.id) === String(wanted)) || state.farms[0];
+    sel.value = String(first.id);
+    await loadFarm(first.id);
+}
+
+if (!window.__ORION_ANALISE_NO_AUTOINIT__) init();
+</script>
+</body>
+</html>

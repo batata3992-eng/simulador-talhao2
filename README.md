@@ -681,3 +681,13 @@ pytest            # a partir da RAIZ do repositório
 > o talhão (`√area·1000` em vez de `√area·100` metros) e a classificação
 > espectral não era mutuamente exclusiva (pct das zonas passava de 100 e o
 > índice médio podia ultrapassar o limite físico de 1,0).
+
+## Análise agronômica (`analise.html`)
+
+Página integrada à API: lista as fazendas do usuário, consulta `GET /api/analytics/farm/{id}?layer=ndvi|ndmi|ndre|evi`
+e mostra KPIs, mapa do talhão (contorno real quando cadastrado), evolução temporal e alertas.
+Abra por `http://localhost:5501/analise.html` (aceita `?farm_id=`). Exige login (`auth.html`).
+Um banner indica se os dados são Sentinel-2 reais, procedurais ou de contingência.
+Os índices são calculados **por fazenda** pela API atual; os limiares de classificação ficam em `THRESHOLDS` no topo do script.
+
+Para subir tudo no Windows: `run.bat` (backend :8000 + frontend :5501).
